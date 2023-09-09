@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import recipes.dao.RecipeDao;
+import recipes.entity.Recipe;
 import recipes.exception.DbException;
 
 public class RecipeService {
@@ -76,6 +77,10 @@ private String readFileContent(String fileName) {
 	} catch (Exception e) {
 	throw new DbException(e);
 	}
+}
+
+public List<Recipe> fetchRecipes() {
+	return recipeDao.fetchAllRecipes();
 }
 
 }
