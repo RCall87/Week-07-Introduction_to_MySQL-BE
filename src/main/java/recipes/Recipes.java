@@ -16,8 +16,9 @@ public class Recipes {
 	// @formatter:off
 	private List<String> operations = List.of(
 			"1) Create and populate all tables",
-			"2) Add a recipe"
-			"3) List recipes"
+			"2) Add a recipe",
+			"3) List recipes",
+			"4) Select working recipe"
 			);
 	//@formatter:on
 	public static void main(String[] args) {
@@ -47,6 +48,10 @@ public class Recipes {
 					listRecipes();
 					break;
 
+				case 4:
+					setCurrentRecipe();
+					break;
+
 				default:
 					System.out.println("\n" + operation + " is not valid. Try again.");
 					break;
@@ -58,12 +63,33 @@ public class Recipes {
 
 	}
 
-	private void listRecipes() {
+	private void setCurrentRecipe() {
+	List<Recipe> recipes = listRecipes();	
+	
+	Integer recipeId = getIntInput("Select a recipe ID");
+	
+	curRecipe = null;
+	
+	for(Recipe recipe : recipes) {
+	if(recipe.getRecipeId().equals(recipeId)) {
+		curRecipe = recipeService.fetchRecipeById(recipeId);
+		break;
+	}
+	}
+	
+	if(Objects.isNull(curRecipe)) {
+		System.out.println("\nInvalid recipe selected. ");
+	}
+	}
+
+	private List<Recipe> listRecipes() {
 		List<Recipe> recipes = recipeService.fetchRecipes();
 
 		System.out.println("\nRecipes");
 
 		recipes.forEach(recipe -> System.out.println("   " + recipe.getRecipeId() + ": " + recipe.getRecipeMane()));
+		
+		return recipes;
 	}
 
 	private void addRecipe() {
@@ -78,6 +104,10 @@ public class Recipes {
 
 		Recipe recipe = new Recipe();
 	}
+        Recipe dbRecipe = recipeService.addRecipe(recipe);
+        System.out.print.ln("You added this recipe: \n" + dbRecipe);
+
+        curRecipe = recipeService.fetchRecipeById(dbRecipe.getRecipeId());
 
 	private LocalTime minutesToLocalTime(Integer numMinutes) {
 		int min = Objects.isNull(numMinutes) ? 0 : numMinutes;

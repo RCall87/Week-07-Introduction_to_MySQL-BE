@@ -5,82 +5,86 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import recipes.dao.RecipeDao;
 import recipes.entity.Recipe;
 import recipes.exception.DbException;
 
 public class RecipeService {
-  private static final String SCHEMA_FILE = "recipe_schema.sql";
-  private static final String DATA_FILE = "recipe_data.sql";
-  private RecipeDao recipeDao = new RecipeDao();
-  
-  public void createAndPopulateTables() {
-	  LoadFromFile(SCHEMA_FILE);
-	  LoadFromFile(DATA_FILE);
-  }
+	private static final String SCHEMA_FILE = "recipe_schema.sql";
+	private static final String DATA_FILE = "recipe_data.sql";
+	private RecipeDao recipeDao = new RecipeDao();
 
-private void LoadFromFile(String fileName) {
-  String content = readFileContent(fileName);
-  List<String> sqlStatements = convertContentToSqlStatements(content);
- 
-  recipeDao.executeBatch(sqlStatements);	
-}
+	public Recipe fetchRecipeById(Integer recipeId) {
+		return recipeDao.fetchRecipeById(recipeId)
+				.orElseThrow(() -> new NoSuchElementException("Recipe with ID=" + recipeId + " does not exist."));
+	}
 
-private List<String> convertContentToSqlStatements(String content) {
-	content = removeComments(content);
-	content = replaceWhiteSpaceSequencesWithSingleSpace(content);
-	return extractLinesFromContent(content);
-}
+	public void createAndPopulateTables() {
+		LoadFromFile(SCHEMA_FILE);
+		LoadFromFile(DATA_FILE);
+	}
 
-private List<String> extractLinesFromContent(String content) {
-	List<String> lines = new LinkedList<>();
-	while(!content.isEmpty()) {
-	int semicolon = content.indexOf(";");
-	if(semicolon == -1) {
-		if(!content.isBlank()) {
-			lines.add(content);
+	private void LoadFromFile(String fileName) {
+		String content = readFileContent(fileName);
+		List<String> sqlStatements = convertContentToSqlStatements(content);
+
+		recipeDao.executeBatch(sqlStatements);
+	}
+
+	private List<String> convertContentToSqlStatements(String content) {
+		content = removeComments(content);
+		content = replaceWhiteSpaceSequencesWithSingleSpace(content);
+		return extractLinesFromContent(content);
+	}
+
+	private List<String> extractLinesFromContent(String content) {
+		List<String> lines = new LinkedList<>();
+		while (!content.isEmpty()) {
+			int semicolon = content.indexOf(";");
+			if (semicolon == -1) {
+				if (!content.isBlank()) {
+					lines.add(content);
+				}
+				content = "";
+			} else {
+				lines.add(content.substring(0, semicolon).trim());
+				content = content.substring(semicolon + 1);
+			}
 		}
-		content = "";
+		return lines;
 	}
-	else {
-		lines.add(content.substring(0, semicolon).trim());
-		content = content.substring(semicolon + 1);
-	}
-	}
-	return lines;
-}
 
-private String replaceWhiteSpaceSequencesWithSingleSpace(String content) {
-	return content.replaceAll("\\s+", " ");
-}
+	private String replaceWhiteSpaceSequencesWithSingleSpace(String content) {
+		return content.replaceAll("\\s+", " ");
+	}
 
-private String removeComments(String content) {
-	StringBuilder builder = new StringBuilder(content);
-	int commentPos = 0;
-	while((commentPos = builder.indexOf("-- ", commentPos)) != -1) {
-		int eolPos = builder.indexOf("\n", commentPos + 1);
-		if(eolPos == -1) {
-		builder.replace(commentPos,  builder.length(), "");	
+	private String removeComments(String content) {
+		StringBuilder builder = new StringBuilder(content);
+		int commentPos = 0;
+		while ((commentPos = builder.indexOf("-- ", commentPos)) != -1) {
+			int eolPos = builder.indexOf("\n", commentPos + 1);
+			if (eolPos == -1) {
+				builder.replace(commentPos, builder.length(), "");
+			} else {
+				builder.replace(commentPos, eolPos + 1, "");
+			}
 		}
-		else {
-			builder.replace(commentPos, eolPos + 1, "");
+		return builder.toString();
+	}
+
+	private String readFileContent(String fileName) {
+		try {
+			Path path = Paths.get(getClass().getClassLoader().getResource(fileName).toURI());
+			return Files.readString(path);
+		} catch (Exception e) {
+			throw new DbException(e);
 		}
 	}
-	return builder.toString();
-}
 
-private String readFileContent(String fileName) {
-	try {
-		Path path = Paths.get(getClass().getClassLoader().getResource(fileName).toURI());
-		return Files.readString(path);
-	} catch (Exception e) {
-	throw new DbException(e);
+	public List<Recipe> fetchRecipes() {
+		return recipeDao.fetchAllRecipes();
 	}
-}
-
-public List<Recipe> fetchRecipes() {
-	return recipeDao.fetchAllRecipes();
-}
 
 }
